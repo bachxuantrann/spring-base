@@ -5,6 +5,7 @@ import gem.training_spring.base_app.entity.User;
 import gem.training_spring.base_app.repository.UserRepository;
 import gem.training_spring.base_app.service.UserService;
 import gem.training_spring.base_app.util.SecurityUtil;
+import gem.training_spring.base_app.util.enums.RoleEnum;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
@@ -16,6 +17,7 @@ import org.springframework.http.ResponseCookie;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.oauth2.client.authentication.OAuth2AuthenticationToken;
 import org.springframework.security.oauth2.core.user.OAuth2User;
 import org.springframework.security.web.authentication.AuthenticationSuccessHandler;
@@ -32,6 +34,7 @@ public class OAuth2LoginSuccessHandler implements AuthenticationSuccessHandler {
     private final UserRepository userRepository;
     @Value("${bxt.jwt.refresh-token-validity-in-seconds}")
     private long refeshTokenExpiration;
+    private final PasswordEncoder passwordEncoder;
 
     @Override
     public void onAuthenticationSuccess(HttpServletRequest request, HttpServletResponse response,
@@ -42,7 +45,7 @@ public class OAuth2LoginSuccessHandler implements AuthenticationSuccessHandler {
 
         String email = oauthUser.getAttribute("email");
         String name = oauthUser.getAttribute("name");
-        String registerId = oauthToken.getAuthorizedClientRegistrationId().toUpperCase();
+        String registerId = oauthToken.getAuthorizedClientRegistrationId().toUpperCase(); // GOOGLE / FACEBOOK
         Authentication tempAuth = new UsernamePasswordAuthenticationToken(email, null, Collections.emptyList());
         SecurityContextHolder.getContext().setAuthentication(tempAuth);
         // Kiểm tra DB, nếu chưa có thì tạo user mới
@@ -51,7 +54,8 @@ public class OAuth2LoginSuccessHandler implements AuthenticationSuccessHandler {
             user = new User();
             user.setEmail(email);
             user.setUsername(name);
-            user.setPassword(registerId);
+            user.setPassword(passwordEncoder.encode(registerId));
+            user.setRole(RoleEnum.USER);
             userRepository.save(user);
         }
         // Tạo access token
@@ -61,8 +65,9 @@ public class OAuth2LoginSuccessHandler implements AuthenticationSuccessHandler {
         resLoginDTO.setAccessToken(accessToken);
         resLoginDTO.setUserLogin(userLogin);
         String refreshToken = securityUtil.createRefreshToken(email,resLoginDTO);
-
-        userService.updateUserToken(refreshToken, email);
+        System.out.println("refresh token:"+refreshToken);
+        System.out.println("access token"+accessToken);
+        userService.updateUserToken(refreshToken, name);
 
         // Set cookie refresh token
         ResponseCookie cookie = ResponseCookie.from("refresh_token", refreshToken)
