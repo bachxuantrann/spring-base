@@ -3,6 +3,7 @@ package gem.training_spring.base_app.exceptions;
 import gem.training_spring.base_app.dto.RestReponse;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.validation.BindingResult;
 import org.springframework.validation.FieldError;
@@ -10,6 +11,7 @@ import org.springframework.web.HttpRequestMethodNotSupportedException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+import org.springframework.web.servlet.resource.NoResourceFoundException;
 
 import java.util.List;
 import java.util.stream.Collectors;
@@ -18,7 +20,8 @@ import java.util.stream.Collectors;
 public class GlobalExceptionHandler {
     @ExceptionHandler(value = {
             IdInvalidExceptions.class,
-            UsernameNotFoundException.class
+            UsernameNotFoundException.class,
+            BadCredentialsException.class,
     })
     public ResponseEntity<RestReponse<Object>> handleIdInvalidExceptions(Exception ex) {
         RestReponse<Object> res = new RestReponse<Object>();
@@ -46,5 +49,15 @@ public class GlobalExceptionHandler {
         res.setError(ex.getMessage());
         res.setMessage("HTTP Method Not Allowed");
         return ResponseEntity.status(HttpStatus.METHOD_NOT_ALLOWED).body(res);
+    }
+    @ExceptionHandler(value = {
+            NoResourceFoundException.class
+    })
+    public ResponseEntity<RestReponse<Object>> handleResourceNotFoundException(NoResourceFoundException ex) {
+        RestReponse<Object> res = new RestReponse<Object>();
+        res.setStatusCode(HttpStatus.NOT_FOUND.value());
+        res.setError(ex.getMessage());
+        res.setMessage("404... Resource not found... ");
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(res);
     }
 }
