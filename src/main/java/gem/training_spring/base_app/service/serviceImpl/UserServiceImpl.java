@@ -7,27 +7,29 @@ import gem.training_spring.base_app.repository.UserRepository;
 import gem.training_spring.base_app.service.UserService;
 import gem.training_spring.base_app.util.enums.RoleEnum;
 import lombok.RequiredArgsConstructor;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
 @Service
 @RequiredArgsConstructor
 public class UserServiceImpl implements UserService {
     private final UserRepository userRepository;
+    private final PasswordEncoder passwordEncoder;
 
     @Override
     public UserDTO handleCreateUser(User user) throws IdInvalidExceptions {
-        boolean isExist = this.isUserExist(user.getUsername());
+        boolean isExist = this.isUserExist(user.getUsername().trim());
         if (isExist) {
             throw new IdInvalidExceptions("user is already exist");
         }
-//        String password = user.getPassword().trim();
-//        String hassPassword = this.passwordEncoder.encode(password);
+        String password = user.getPassword().trim();
+        String hassPassword = this.passwordEncoder.encode(password);
         User newUser = new User();
         if (user.getEmail() != null) {
             newUser.setEmail(user.getEmail());
         }
         newUser.setUsername(user.getUsername());
-        newUser.setPassword(user.getPassword());
+        newUser.setPassword(hassPassword);
         newUser.setRole(RoleEnum.USER);
         return this.userRepository.save(newUser).toDTO(UserDTO.class);
     }
@@ -64,7 +66,17 @@ public class UserServiceImpl implements UserService {
         return this.userRepository.findByUsername(username);
     }
 
+    @Override
+    public void updateUserToken(String token, String username) {
+        User currentUser = this.handleGetUserByUsername(username);
+        if (currentUser != null) {
+            currentUser.setRefreshToken(token);
+            this.userRepository.save(currentUser);
+        }
+    }
+
     public boolean isUserExist(String username) {
         return this.userRepository.findByUsername(username.trim()) instanceof User ? true : false;
     }
+
 }

@@ -12,5 +12,8 @@ public interface UserService {
     void handleDeleteUser(Long id) throws IdInvalidExceptions;
 
     UserDTO handleUpdateUser(UserDTO userDTO) throws IdInvalidExceptions;
+
     User handleGetUserByUsername(String username);
+
+    void updateUserToken(String token, String username);
 }
