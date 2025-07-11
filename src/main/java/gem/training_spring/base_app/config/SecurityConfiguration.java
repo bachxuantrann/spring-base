@@ -41,7 +41,7 @@ public class SecurityConfiguration {
                 .cors(Customizer.withDefaults())
                 .authorizeHttpRequests(
                         auth -> auth
-                                .requestMatchers("/", "/api/auth/login", "/api/auth/refresh-token","/oauth2/**").permitAll()
+                                .requestMatchers("/", "/api/auth/login", "/api/auth/refresh-token","/oauth2/**", "/login-success").permitAll()
                                 .anyRequest().authenticated()
                 )
                 .oauth2ResourceServer((oauth2) ->
