@@ -25,4 +25,5 @@ public class User extends BaseEntity<UserDTO>{
     private RoleEnum role;
     @Column(columnDefinition = "MEDIUMTEXT")
     private String refreshToken;
+
 }

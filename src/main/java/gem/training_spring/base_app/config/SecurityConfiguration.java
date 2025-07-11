@@ -35,20 +35,22 @@ public class SecurityConfiguration {
     }
 
     @Bean
-    public SecurityFilterChain filterChain(HttpSecurity http, CustomAuthenticationEntryPoint customAuthenticationEntryPoint) throws Exception {
+    public SecurityFilterChain filterChain(HttpSecurity http, CustomAuthenticationEntryPoint customAuthenticationEntryPoint,OAuth2LoginSuccessHandler oAuth2LoginSuccessHandler ) throws Exception {
         http
                 .csrf(c -> c.disable())
                 .cors(Customizer.withDefaults())
                 .authorizeHttpRequests(
                         auth -> auth
-                                .requestMatchers("/", "/api/auth/login", "/api/auth/refresh-token").permitAll()
+                                .requestMatchers("/", "/api/auth/login", "/api/auth/refresh-token","/oauth2/**").permitAll()
                                 .anyRequest().authenticated()
                 )
                 .oauth2ResourceServer((oauth2) ->
                         oauth2.jwt(Customizer.withDefaults())
                                 .authenticationEntryPoint(customAuthenticationEntryPoint)
                 )
-                .formLogin(f -> f.disable())
+                .oauth2Login(oauth2 -> oauth2
+                        .successHandler(oAuth2LoginSuccessHandler))
+                .formLogin(Customizer.withDefaults())
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS));
         return http.build();
     }
