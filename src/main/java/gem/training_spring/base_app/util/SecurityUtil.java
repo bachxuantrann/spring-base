@@ -18,8 +18,10 @@ import java.util.Optional;
 @Service
 public class SecurityUtil {
     private final JwtEncoder jwtEncoder;
-    public SecurityUtil(JwtEncoder jwtEncoder) {
+    private final JwtDecoder jwtDecoder;
+    public SecurityUtil(JwtEncoder jwtEncoder, JwtDecoder jwtDecoder) {
         this.jwtEncoder = jwtEncoder;
+        this.jwtDecoder = jwtDecoder;
     }
     public static final MacAlgorithm JWT_ALGORITHM = MacAlgorithm.HS512;
     @Value("${bxt.jwt.base64-secret}")
@@ -37,18 +39,18 @@ public class SecurityUtil {
                 .issuedAt(now)
                 .expiresAt(validity)
                 .subject(authentication.getName())
-                .claim("bxt", dto)
+                .claim("user", dto)
                 .build();
         JwsHeader jwsHeader = JwsHeader.with(JWT_ALGORITHM).build();
         return this.jwtEncoder.encode(JwtEncoderParameters.from(jwsHeader,claims)).getTokenValue();
     }
-    public String createRefreshToken(String email, ResLoginDTO dto){
+    public String createRefreshToken(String username, ResLoginDTO dto){
         Instant now = Instant.now();
         Instant validity = now.plus(this.refeshTokenExpiration, ChronoUnit.SECONDS);
         JwtClaimsSet claims = JwtClaimsSet.builder()
                 .issuedAt(now)
                 .expiresAt(validity)
-                .subject(email)
+                .subject(username)
                 .claim("user",dto.getUserLogin())
                 .build();
         JwsHeader jwsHeader = JwsHeader.with(JWT_ALGORITHM).build();
@@ -70,5 +72,8 @@ public class SecurityUtil {
             return s;
         }
         return null;
+    }
+    public Jwt decodeJwt(String token){
+        return this.jwtDecoder.decode(token);
     }
 }

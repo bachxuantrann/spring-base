@@ -1,5 +1,6 @@
 package gem.training_spring.base_app.entity;
 
+import gem.training_spring.base_app.util.SecurityUtil;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
@@ -29,13 +30,13 @@ public class BaseEntity<DTO> implements Serializable {
     @PrePersist
     public void handleBeforeCreate() {
         this.createdAt = Instant.now();
-        this.createdBy = "admin";
+        this.createdBy = SecurityUtil.getCurrentUserLogin().get();
     }
 
     @PreUpdate
     public void handleBeforeUpdate() {
         this.updatedAt = Instant.now();
-        this.updatedBy = "admin";
+        this.updatedBy = SecurityUtil.getCurrentUserLogin().get();
     }
 
     public DTO toDTO(Class<DTO> clazz) {

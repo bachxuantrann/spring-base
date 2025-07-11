@@ -16,10 +16,10 @@ import org.springframework.security.authentication.UsernamePasswordAuthenticatio
 import org.springframework.security.config.annotation.authentication.builders.AuthenticationManagerBuilder;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.security.oauth2.jwt.Jwt;
+import org.springframework.web.bind.annotation.*;
+
+import java.util.Collections;
 
 @RestController
 @RequestMapping("/api/auth")
@@ -54,5 +54,42 @@ public class AuthController {
                 .maxAge(refeshTokenExpiration)
                 .build();
         return ResponseEntity.ok().header(HttpHeaders.SET_COOKIE, cookie.toString()).body(res);
+    }
+
+    @PostMapping("/refresh-token")
+    @ApiMessage("refresh acccess token")
+    public ResponseEntity<?> refreshToken(@CookieValue(name = "refresh_token", required = false) String refresh_token) {
+        if (refresh_token == null || refresh_token.isEmpty()) {
+            return ResponseEntity.badRequest().body("Refresh Token is missing !");
+        }
+        Jwt decodedToken;
+        try {
+            decodedToken = securityUtil.decodeJwt(refresh_token);
+        } catch (Exception e) {
+            return ResponseEntity.status(401).body("Invalid Refresh Token !");
+        }
+        String username = decodedToken.getSubject();
+        if (username == null) {
+            return ResponseEntity.status(401).body("Invalid Refresh Token !");
+        }
+        User currentUser = this.userService.handleGetUserByUsername(username);
+        if (currentUser == null || !refresh_token.equals(currentUser.getRefreshToken())) {
+            return ResponseEntity.status(401).body("Refresh Token dosen't match !");
+        }
+        ResLoginDTO.UserLogin userLogin = new ResLoginDTO.UserLogin(currentUser.getId(), currentUser.getEmail(), currentUser.getUsername());
+        Authentication authentication = new UsernamePasswordAuthenticationToken(username, null, Collections.emptyList());
+        String newAccessToken = securityUtil.createAccessToken(authentication, userLogin);
+        ResLoginDTO resLoginDTO = new ResLoginDTO();
+        resLoginDTO.setUserLogin(userLogin);
+        resLoginDTO.setAccessToken(newAccessToken);
+        String newRefreshToken = securityUtil.createRefreshToken(currentUser.getUsername(), resLoginDTO);
+        this.userService.updateUserToken(newRefreshToken, currentUser.getUsername());
+        ResponseCookie cookie = ResponseCookie.from("refresh_token", newRefreshToken)
+                .httpOnly(true)
+                .secure(true)
+                .path("/")
+                .maxAge(refeshTokenExpiration)
+                .build();
+        return ResponseEntity.ok().header(HttpHeaders.SET_COOKIE, cookie.toString()).body(resLoginDTO);
     }
 }

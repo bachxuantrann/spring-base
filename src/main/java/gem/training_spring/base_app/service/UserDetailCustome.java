@@ -1,7 +1,6 @@
 package gem.training_spring.base_app.service;
 
 
-import gem.training_spring.base_app.exceptions.IdInvalidExceptions;
 import org.springframework.security.core.userdetails.User;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
@@ -23,7 +22,7 @@ public class UserDetailCustome implements UserDetailsService {
             throw new UsernameNotFoundException("username not found");
         }
         return User.builder()
-                .username(user.getEmail())
+                .username(user.getUsername())
                 .password(user.getPassword())
                 .authorities(user.getRole().name())
                 .build();
