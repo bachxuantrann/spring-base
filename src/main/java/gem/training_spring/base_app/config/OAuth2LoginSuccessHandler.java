@@ -3,6 +3,7 @@ package gem.training_spring.base_app.config;
 import gem.training_spring.base_app.dto.ResLoginDTO;
 import gem.training_spring.base_app.entity.User;
 import gem.training_spring.base_app.repository.UserRepository;
+import gem.training_spring.base_app.service.TokenCacheService;
 import gem.training_spring.base_app.service.UserService;
 import gem.training_spring.base_app.util.SecurityUtil;
 import gem.training_spring.base_app.util.enums.RoleEnum;
@@ -17,6 +18,7 @@ import org.springframework.http.ResponseCookie;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.core.token.TokenService;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.oauth2.client.authentication.OAuth2AuthenticationToken;
 import org.springframework.security.oauth2.core.user.OAuth2User;
@@ -34,6 +36,7 @@ public class OAuth2LoginSuccessHandler implements AuthenticationSuccessHandler {
     private final UserRepository userRepository;
     @Value("${bxt.jwt.refresh-token-validity-in-seconds}")
     private long refeshTokenExpiration;
+    private final TokenCacheService tokenCacheService;
     private final PasswordEncoder passwordEncoder;
 
     @Override
@@ -68,7 +71,8 @@ public class OAuth2LoginSuccessHandler implements AuthenticationSuccessHandler {
         System.out.println("refresh token:"+refreshToken);
         System.out.println("access token"+accessToken);
         userService.updateUserToken(refreshToken, name);
-
+        tokenCacheService.saveToken("refresh_token:" + email, refreshToken);
+        tokenCacheService.getToken("refresh_token:" + email);
         // Set cookie refresh token
         ResponseCookie cookie = ResponseCookie.from("refresh_token", refreshToken)
                 .httpOnly(true)
