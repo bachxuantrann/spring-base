@@ -13,8 +13,6 @@ public class TokenCacheServiceImpl  implements TokenCacheService {
     private final RedisTemplate<String, Object> redisTemplate;
     @Override
     public void saveToken(String key, String token) {
-//        redisTemplate.opsForValue().set(key, token, 1, TimeUnit.MINUTES);
-//        redisTemplate.opsForList().leftPush("refresh_tokens", token);
         redisTemplate.opsForValue().set(key, token, 60, TimeUnit.SECONDS);
     }
 
